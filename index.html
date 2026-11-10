@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Таблица умножения — 5 минут в день</title>
+<meta name="theme-color" content="#1F3A5F">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#FAF6EF;--card:#FFFFFF;--ink:#22303F;--muted:#6B7A8C;--primary:#1F3A5F;--accent:#C46A1F;--ok:#2E7D32;--err:#B3261E;--star:#E5A50A;--line:#E5DECF}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:19px;line-height:1.45;min-height:100vh}
+#app{max-width:520px;margin:0 auto;padding:16px 14px 44px}
+h1{font-size:26px;margin:6px 0 2px}
+h2{font-size:21px;margin:16px 0 8px}
+.sub{color:var(--muted);font-size:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin:12px 0;box-shadow:0 2px 10px rgba(31,58,95,.06)}
+.btn{display:block;width:100%;border:0;border-radius:14px;padding:16px 18px;font-size:20px;font-weight:600;background:var(--primary);color:#fff;margin:10px 0;cursor:pointer;text-align:center}
+.btn.secondary{background:#E9E2D2;color:var(--ink)}
+.btn.ghost{background:transparent;border:2px solid var(--primary);color:var(--primary)}
+.btn.tiny{font-size:16px;padding:10px 14px;background:transparent;border:1px solid var(--line);color:var(--muted);font-weight:500}
+.btn:active{transform:scale(.985)}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.ans{border:2px solid var(--primary);background:#fff;color:var(--primary);border-radius:14px;padding:18px 8px;font-size:26px;font-weight:700;cursor:pointer}
+.ans.good{background:var(--ok);border-color:var(--ok);color:#fff}
+.ans.bad{background:var(--err);border-color:var(--err);color:#fff}
+.q{font-size:52px;font-weight:800;text-align:center;margin:16px 0 6px}
+.q .x{color:var(--accent)}
+.hintcard{background:#FFF7E8;border:1px solid #EBD9B4;border-radius:12px;padding:12px 14px;margin:10px 0;font-size:17px}
+.hintcard b{color:var(--accent)}
+.fb{font-size:20px;font-weight:700;text-align:center;margin:10px 0}
+.fb.ok{color:var(--ok)}.fb.err{color:var(--err)}
+.fact{font-size:56px;font-weight:800;text-align:center;color:var(--primary);margin:8px 0}
+.eq{font-size:26px;text-align:center;color:var(--accent);font-weight:700;margin:4px 0}
+.stage-badge{display:inline-block;background:#E9F3EA;color:var(--ok);border-radius:999px;padding:5px 14px;font-size:16px;font-weight:600;margin:4px 8px 4px 0}
+.note{background:#EEF3FA;border:1px solid #D4DFEE;border-radius:12px;padding:12px 14px;margin:10px 0;font-size:17px}
+.warn{background:#FDECEA;border:1px solid #F2C4C0;color:#8C2B24;border-radius:12px;padding:10px 14px;font-size:16px;margin:10px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.stage{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:10px 0}
+.stage .t{font-weight:700;font-size:18px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:16px;background:#FDFBF5}
+.chip .st{color:var(--star);letter-spacing:1px;font-size:13px;display:block}
+.chip.done{border-color:var(--ok);background:#F3FAF4}
+.center{text-align:center}
+.small{font-size:15px;color:var(--muted)}
+.big{font-size:22px;font-weight:700}
+ul{padding-left:22px}li{margin:7px 0}
+hr{border:0;border-top:1px solid var(--line);margin:14px 0}
+.progress-num{font-size:34px;font-weight:800;color:var(--primary)}
+.stars-line{color:var(--star);font-size:24px;letter-spacing:2px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+'use strict';
+// ============ ДАННЫЕ: ступени и подсказки ============
+const ORDER=[2,5,9,3,4,6,7,8];
+const INTERVALS=[0,1,2,4,8,16];
+const HINTS={
+'2x2':{s:'2 + 2 = 4',r:'Дважды два — четыре'},
+'2x3':{s:'3 + 3 = 6. Три взять дважды.'},
+'2x4':{s:'4 + 4 = 8. Четыре взять дважды.'},
+'2x5':{s:'5 + 5 = 10. Пять взять дважды.'},
+'2x6':{s:'6 + 6 = 12. Шесть взять дважды.'},
+'2x7':{s:'7 + 7 = 14. Семь взять дважды.'},
+'2x8':{s:'8 + 8 = 16. Восемь взять дважды.'},
+'2x9':{s:'9 + 9 = 18. Девять взять дважды.'},
+'3x3':{s:'3 + 3 + 3 = 9'},
+'3x4':{s:'4 + 4 + 4 = 12. Или: 4×2 = 8, плюс ещё 4.'},
+'3x5':{s:'5 + 5 + 5 = 15. Или: 30 пополам (это 3×10).',r:'Пятью три — пятнадцать'},
+'3x6':{s:'6×2 = 12, плюс ещё 6 → 18'},
+'3x7':{s:'7×2 = 14, плюс ещё 7 → 21'},
+'3x8':{s:'8×2 = 16, плюс ещё 8 → 24'},
+'4x4':{s:'Удвойте дважды: 4×2 = 8, и 8×2 = 16'},
+'4x5':{s:'4×10 = 40, пополам → 20'},
+'4x6':{s:'Удвойте дважды: 6×2 = 12, и 12×2 = 24'},
+'4x7':{s:'Удвойте дважды: 7×2 = 14, и 14×2 = 28'},
+'4x8':{s:'Удвойте дважды: 8×2 = 16, и 16×2 = 32'},
+'5x5':{s:'5×10 = 50, пополам → 25. Ответы пятёрки всегда кончаются на 5 или 0',r:'Пятью пять — двадцать пять'},
+'5x6':{s:'6×10 = 60, пополам → 30'},
+'5x7':{s:'7×10 = 70, пополам → 35'},
+'5x8':{s:'8×10 = 80, пополам → 40'},
+'5x9':{s:'9×10 = 90, пополам → 45'},
+'3x9':{s:'9×3 = 30 − 3 = 27. У девятки: берём десятки и убираем один'},
+'4x9':{s:'9×4 = 40 − 4 = 36'},
+'6x9':{s:'9×6 = 60 − 6 = 54'},
+'7x9':{s:'9×7 = 70 − 7 = 63'},
+'8x9':{s:'9×8 = 80 − 8 = 72'},
+'9x9':{s:'9×9 = 90 − 9 = 81'},
+'6x6':{s:'6×5 = 30, плюс 6 → 36',r:'Шестью шесть — тридцать шесть'},
+'6x7':{s:'7×5 = 35, плюс 7 → 42',r:'Шестью семь — сорок два'},
+'6x8':{s:'6×10 = 60, минус 12 → 48',r:'Шестью восемь — сорок восемь'},
+'7x7':{s:'Почти 50: 50 − 1 = 49. Или: 7×5 = 35, плюс 14 → 49',r:'Семью семь — сорок девять'},
+'7x8':{s:'Цифры идут подряд: 5, 6, 7, 8 → 56. Или: 7×7 = 49, плюс 7 → 56',r:'Семью восемь — пятьдесят шесть'},
+'8x8':{s:'Шахматная доска: 8 рядов по 8 клеток = 64. Или: 80 − 16 → 64'}
+};
+const STAGE_NOTES={
+2:'×2 — это просто «взять дважды»: 8×2 = 8 + 8.',
+5:'×5 — это половина от ×10: 7×5 = 70 пополам = 35. Ответ всегда кончается на 5 или 0.',
+9:'×9 — это ×10 без одного: 9×6 = 60 − 6 = 54. Заметьте: у всех ответов сумма цифр равна 9 (18, 27, 36, 45…).',
+3:'×3 — взять три раза: 7×3 = 7 + 7 + 7.',
+4:'×4 — удвоить дважды: 7×4 = 14, а 14×2 = 28.',
+6:'Осталось немного! У шестёрки самые знаменитые стишки — они помогут.',
+7:'Самые коварные примеры. Но у каждого есть фокус — смотрите подсказки.',
+8:'Последний рывок — здесь всего один новый пример: 8×8 = 64.'
+};
+function buildAll(){
+  const seen=new Set(); const stages=[];
+  for(const t of ORDER){
+    const items=[];
+    for(let k=2;k<=9;k++){
+      const lo=Math.min(t,k),hi=Math.max(t,k),key=lo+'x'+hi;
+      if(seen.has(key))continue; seen.add(key);
+      const h=HINTS[key]||{};
+      items.push({key,a:t,b:k,ans:t*k,hint:h.s||'',rhyme:h.r||''});
+    }
+    stages.push({table:t,note:STAGE_NOTES[t],items});
+  }
+  return stages;
+}
+const STAGES=buildAll();
+const ITEMS=[]; STAGES.forEach((st,si)=>st.items.forEach(it=>{it.si=si;ITEMS.push(it);}));
+const TOTAL=ITEMS.length;
+// ============ ХРАНИЛИЩЕ ============
+function dkey(d){d=d||new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();}
+function plusDays(n){const d=new Date();d.setDate(d.getDate()+n);return dkey(d);}
+function yesterdayKey(){const d=new Date();d.setDate(d.getDate()-1);return dkey(d);}
+let S=null,canSave=true;
+function defStore(){return{v:1,facts:{},streak:0,best:0,lastDay:0,total:0,correct:0,intro:false};}
+function load(){try{const r=localStorage.getItem('mult5min_v1');S=r?JSON.parse(r):defStore();canSave=true;}catch(e){S=defStore();canSave=false;}}
+function save(){if(!canSave)return;try{localStorage.setItem('mult5min_v1',JSON.stringify(S));}catch(e){}}
+function fact(k){if(!S.facts[k])S.facts[k]={box:0,due:0};return S.facts[k];}
+// ============ УТИЛИТЫ ============
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function choices(ans,a,b){
+  const set=new Set([ans]);
+  const cand=[ans+a,ans-a,ans+b,ans-b,ans+10,ans-10,ans+1,ans-1];
+  const rev=+(String(ans).split('').reverse().join(''));
+  if(rev!==ans)cand.push(rev);
+  shuffle(cand);
+  for(const c of cand){if(set.size>=4)break;if(c>0&&c<=100&&!set.has(c))set.add(c);}
+  let d=2,guard=0;
+  while(set.size<4&&guard++<50){if(!set.has(ans+d)&&ans+d<=100)set.add(ans+d);d++;}
+  const arr=Array.from(set);shuffle(arr);return arr;
+}
+const app=document.getElementById('app');
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredPrompt=e;const b=document.getElementById('installbtn');if(b)b.style.display='block';});
+// ============ ЭКРАН: ГЛАВНАЯ ============
+function counts(){
+  let learned=0,mastered=0;
+  ITEMS.forEach(function(it){const f=S.facts[it.key];if(f&&f.box>=1)learned++;if(f&&f.box>=5)mastered++;});
+  return{learned:learned,mastered:mastered};
+}
+function home(){
+  const c=counts();
+  let h='<h1>Таблица умножения</h1><div class="sub">5 минут в день — и таблица ваша</div>';
+  if(!canSave)h+='<div class="warn">Прогресс не сохраняется в этом браузере (страница открыта как файл). Занятия работать будут, но достижения могут сбрасываться. Гарантированное сохранение — при установке по ссылке (см. инструкцию).</div>';
+  h+='<div class="card">';
+  if(S.streak>0)h+='<div class="row"><span class="small">Серия занятий подряд</span><span class="progress-num">'+S.streak+' дн.</span></div><hr>';
+  h+='<div class="row"><span class="small">Выучено примеров</span><span class="progress-num">'+c.learned+' / '+TOTAL+'</span></div>';
+  if(c.mastered>0)h+='<div class="small" style="margin-top:6px">из них надёжно (5 повторений): '+c.mastered+'</div>';
+  h+='</div>';
+  if(!S.intro)h+='<div class="card"><b>Как проходят занятия</b><ul><li><b>Повторение</b> — то, что вы уже учили, вернётся само.</li><li><b>3 новых примера</b> — с подсказками-страховками и стишками.</li><li><b>Игра-разминка</b> — без таймеров и наказаний.</li></ul><div class="small">Каждый факт возвращается через 1, 2, 4, 8 и 16 дней — так он закрепляется навсегда.</div></div>';
+  h+='<button class="btn" data-act="start">'+(S.lastDay===dkey()?'Занятие на сегодня пройдено — разминка':'Начать занятие')+'</button>';
+  h+='<button class="btn secondary" data-act="progress">Мой прогресс</button>';
+  h+='<button class="btn secondary" data-act="help">Как это работает</button>';
+  h+='<button class="btn ghost" id="installbtn" style="display:none" data-act="install">Установить как приложение</button>';
+  h+='<div class="small center" style="margin-top:14px">Работает без интернета.<br>Прогресс хранится в этом браузере.</div>';
+  app.innerHTML=h;
+}
+// ============ ЗАНЯТИЕ ============
+let ses=null;
+function startSession(){
+  const today=dkey();
+  const due=ITEMS.filter(function(it){const f=S.facts[it.key];return f&&f.box>=1&&f.due<=today;})
+    .sort(function(x,y){return S.facts[x.key].due-S.facts[y.key].due;}).slice(0,10);
+  const fresh=ITEMS.filter(function(it){const f=S.facts[it.key];return!f||f.box===0;}).slice(0,3);
+  ses={phase:due.length?'review':'learn',mode:'normal',due:due,dueIdx:0,fresh:fresh,freshIdx:0,
+    cur:null,practice:0,game:buildGame(),gIdx:0,gStreak:0,gBest:0,quiz:null,
+    stats:{rep:0,repOk:0,newN:0,answers:0,correct:0}};
+  advance();
+}
+function buildGame(){
+  const pool=ITEMS.filter(function(it){const f=S.facts[it.key];return f&&f.box>=1;});
+  if(pool.length===0)return[];
+  const qs=[];
+  for(let i=0;i<8;i++)qs.push(pool[Math.floor(Math.random()*pool.length)]);
+  return qs;
+}
+function advance(){
+  if(ses.mode==='quiz'){renderQuizQ();return;}
+  if(ses.phase==='review'){
+    if(ses.dueIdx<ses.due.length){askReview();return;}
+    ses.phase='learn';
+  }
+  if(ses.phase==='learn'){
+    while(ses.freshIdx<ses.fresh.length){const f=fact(ses.fresh[ses.freshIdx].key);if(f.box>=1)ses.freshIdx++;else break;}
+    if(ses.freshIdx<ses.fresh.length){learnIntro();return;}
+    ses.phase='game';
+  }
+  if(ses.phase==='game'){
+    if(ses.gIdx===0&&ses.game.length===0)ses.game=buildGame();
+    if(ses.gIdx<ses.game.length){askGame();return;}
+  }
+  finishSession();
+}
+function headerLine(txt){
+  return '<div class="small center" style="margin:4px 0 10px">'+txt+'</div>';
+}
+function hintCard(it){
+  let h='<div class="hintcard"><b>Если забудете:</b> '+it.hint;
+  if(it.rhyme)h+='<br><b>Подсказка:</b> '+it.rhyme;
+  h+='</div>';
+  return h;
+}
+// --- повторение ---
+function askReview(){
+  const it=ses.due[ses.dueIdx];
+  const swap=Math.random()<.5&&it.a!==it.b;
+  const a=swap?it.b:it.a,b=swap?it.a:it.b;
+  const prevTries=(ses.cur&&ses.cur.it===it)?ses.cur.tries:0;
+  ses.cur={it:it,a:a,b:b,tries:prevTries};
+  if(prevTries===0)ses.stats.rep++;
+  app.innerHTML=headerLine('Шаг 1: повторение — '+(ses.dueIdx+1)+' из '+ses.due.length)
+    +'<div class="card"><div class="q">'+a+' <span class="x">×</span> '+b+' = ?</div>'
+    +'<div class="answers">'+ansButtons(it.ans,a,b)+'</div><div id="fb"></div></div>';
+}
+function ansButtons(ans,a,b){
+  const opts=choices(ans,a,b);
+  return opts.map(function(o){return '<button class="ans" data-act="ans" data-v="'+o+'">'+o+'</button>';}).join('');
+}
+function feedback(ok,extra,btnAct,btnLabel){
+  let h='<div class="fb '+(ok?'ok':'err')+'">'+(ok?'Верно!':'Не совсем.')+'</div>';
+  if(extra)h+=extra;
+  h+='<button class="btn" data-act="'+btnAct+'">'+btnLabel+'</button>';
+  const fb=document.getElementById('fb');if(fb)fb.innerHTML=h;
+  const ab=document.querySelectorAll('.ans');ab.forEach(function(b){b.disabled=true;b.style.opacity=.55;});
+}
+// --- новое ---
+function learnIntro(){
+  const it=ses.fresh[ses.freshIdx],st=STAGES[it.si];
+  const firstOfStage=st.items[0].key===it.key;
+  const untouched=st.items.every(function(x){const f=S.facts[x.key];return!f||f.box===0;});
+  let h=headerLine('Шаг 2: новые примеры — '+(ses.freshIdx+1)+' из '+ses.fresh.length);
+  h+='<div class="card"><span class="stage-badge">Ступень '+(it.si+1)+' — столбец ×'+st.table+'</span>';
+  if(firstOfStage&&untouched)h+='<div class="note">'+st.note+'</div>';
+  h+='<div class="fact">'+it.a+' <span style="color:var(--accent)">×</span> '+it.b+' = '+it.ans+'</div>';
+  if(it.rhyme)h+='<div class="eq">'+it.rhyme+'</div>';
+  h+=hintCard(it);
+  if(firstOfStage&&untouched&&st.items.length>=4)h+='<button class="btn secondary" data-act="skipquiz">Этот столбец я уже знаю — проверить и пропустить</button>';
+  h+='<button class="btn" data-act="practice">Понятно — тренировать</button></div>';
+  app.innerHTML=h;
+}
+function askPractice(){
+  const it=ses.cur.it;
+  const swap=ses.practice>0&&it.a!==it.b&&Math.random()<.5;
+  const a=swap?it.b:it.a,b=swap?it.a:it.b;
+  ses.cur.a=a;ses.cur.b=b;
+  app.innerHTML=headerLine('Тренировка: '+ses.practice+' из 3 — всего правильных подряд нужно 3')
+    +'<div class="card"><div class="q">'+a+' <span class="x">×</span> '+b+' = ?</div>'
+    +'<div class="answers">'+ansButtons(it.ans,a,b)+'</div><div id="fb"></div></div>';
+}
+// --- игра ---
+function askGame(){
+  const it=ses.game[ses.gIdx];
+  const swap=it.a!==it.b&&Math.random()<.5;
+  const a=swap?it.b:it.a,b=swap?it.a:it.b;
+  ses.cur={it:it,a:a,b:b};
+  app.innerHTML=headerLine('Шаг 3: игра-разминка — '+(ses.gIdx+1)+' из '+ses.game.length+' • серия: '+ses.gStreak)
+    +'<div class="card"><div class="q">'+a+' <span class="x">×</span> '+b+' = ?</div>'
+    +'<div class="answers">'+ansButtons(it.ans,a,b)+'</div><div id="fb"></div></div>';
+}
+// --- проверка ступени ---
+function startSkipQuiz(){
+  const it=ses.fresh[ses.freshIdx],st=STAGES[it.si];
+  const its=st.items.filter(function(x){const f=S.facts[x.key];return!f||f.box===0;});
+  const qs=shuffle(its.slice()).slice(0,Math.min(7,its.length));
+  ses.mode='quiz';
+  ses.quiz={qs:qs,idx:0,score:0,need:Math.max(1,qs.length-1),stage:st,its:its};
+  renderQuizQ();
+}
+function renderQuizQ(){
+  const q=ses.quiz;
+  if(q.idx>=q.qs.length){finishQuiz();return;}
+  const it=q.qs[q.idx];
+  const swap=it.a!==it.b&&Math.random()<.5;
+  const a=swap?it.b:it.a,b=swap?it.a:it.b;
+  ses.cur={it:it,a:a,b:b};
+  app.innerHTML=headerLine('Проверка ступени «×'+q.stage.table+'»: '+(q.idx+1)+' из '+q.qs.length)
+    +'<div class="card"><div class="q">'+a+' <span class="x">×</span> '+b+' = ?</div>'
+    +'<div class="answers">'+ansButtons(it.ans,a,b)+'</div><div id="fb"></div></div>';
+}
+function finishQuiz(){
+  const q=ses.quiz;ses.mode='normal';
+  let ok=q.score>=q.need;
+  if(ok){
+    q.its.forEach(function(x){const f=fact(x.key);if(f.box<2){f.box=2;f.due=plusDays(2);}});
+    save();
+    app.innerHTML=headerLine('Проверка ступени')+'<div class="card"><div class="fb ok">Отлично! Ступень «×'+q.stage.table+'» засчитана — эти примеры уже ваши.</div><button class="btn" data-act="quiz-done">Продолжить</button></div>';
+  }else{
+    app.innerHTML=headerLine('Проверка ступени')+'<div class="card"><div class="fb err">Пока не совсем — ничего страшного, выучим по шагам.</div><button class="btn" data-act="quiz-done">Продолжить</button></div>';
+  }
+}
+// --- ответы ---
+function onAnswer(val){
+  const cur=ses.cur,it=cur.it;
+  const btns=document.querySelectorAll('.ans');
+  btns.forEach(function(b){const v=+b.dataset.v;if(v===it.ans)b.classList.add('good');else if(+b.dataset.v===val)b.classList.add('bad');b.disabled=true;b.style.opacity=b.classList.contains('good')||b.classList.contains('bad')?1:.55;});
+  S.total++;ses.stats.answers++;save();
+  const correct=val===it.ans;
+  if(correct){ses.stats.correct++;S.correct++;save();}
+  if(ses.mode==='quiz'){
+    if(correct)ses.quiz.score++;
+    document.getElementById('fb').innerHTML='<div class="fb '+(correct?'ok':'err')+'">'+(correct?'Верно!':'Правильный ответ: '+it.ans)+'</div><button class="btn" data-act="quiz-next">Дальше</button>';
+    return;
+  }
+  if(ses.phase==='review'){
+    if(correct){
+      const f=fact(it.key);
+      if(cur.tries===0){
+        ses.stats.repOk++;
+        if(f.box<5){f.box++;}f.due=plusDays(f.box>=5?30:INTERVALS[f.box]);
+      }else{f.box=1;f.due=plusDays(1);}
+      save();
+      feedback(true,'<div class="small center">Это повторение №'+f.box+' из 5. Следующая встреча: через '+(f.box>=5?30:INTERVALS[f.box])+' дн.</div>','rv-next','Дальше');
+    }else{
+      cur.tries++;
+      if(cur.tries<2){
+        feedback(false,hintCard(it),'rv-retry','Показать ещё раз (с подсказкой)');
+      }else{
+        const f=fact(it.key);f.box=1;f.due=plusDays(1);save();
+        feedback(false,'<div class="hintcard"><b>Запомните:</b> '+it.a+' × '+it.b+' = '+it.ans+'. '+it.hint+(it.rhyme?'<br><b>Подсказка:</b> '+it.rhyme:'')+'</div>','rv-next','Запомнил — дальше');
+      }
+    }
+    return;
+  }
+  if(ses.phase==='learn'){
+    if(correct){
+      ses.practice++;
+      if(ses.practice>=3){
+        const f=fact(it.key);f.box=1;f.due=plusDays(1);save();
+        ses.stats.newN++;
+        document.getElementById('fb').innerHTML='<div class="fb ok">Закрепили! Завтра это вернётся на повторение.</div><button class="btn" data-act="next">Дальше</button>';
+      }else{
+        document.getElementById('fb').innerHTML='<div class="fb ok">Верно! Ещё раз.</div><button class="btn" data-act="pr-retry">Следующий вопрос</button>';
+      }
+    }else{
+      feedback(false,hintCard(it),'pr-retry','Попробовать ещё раз');
+    }
+    return;
+  }
+  if(ses.phase==='game'){
+    if(correct){ses.gStreak++;if(ses.gStreak>ses.gBest)ses.gBest=ses.gStreak;}
+    feedback(correct,correct?'':'<div class="hintcard"><b>Правильный ответ:</b> '+it.ans+'. '+it.hint+'</div>','g-next','Дальше');
+    return;
+  }
+}
+// --- переходы ---
+function nextReview(){ses.dueIdx++;ses.cur=null;advance();}
+function retryReview(){askReview();}
+function nextLearn(){ses.freshIdx++;ses.practice=0;ses.cur=null;advance();}
+function retryPractice(){askPractice();}
+function nextGame(){ses.gIdx++;advance();}
+function quizNext(){ses.quiz.idx++;renderQuizQ();}
+function finishSession(){
+  const today=dkey();
+  if(S.lastDay!==today){
+    S.streak=(S.lastDay===yesterdayKey())?S.streak+1:1;
+    if(S.streak>S.best)S.best=S.streak;
+    S.lastDay=today;
+  }
+  save();
+  const dueT=ITEMS.filter(function(it){const f=S.facts[it.key];return f&&f.box>=1&&f.due===plusDays(1);}).length;
+  const freshLeft=ITEMS.filter(function(it){const f=S.facts[it.key];return!f||f.box===0;}).length;
+  let h=headerLine('Занятие окончено');
+  h+='<div class="card center"><div class="fb ok">Хорошая работа!</div>';
+  h+='<div class="row"><span class="small">Повторено</span><span class="big">'+ses.stats.rep+'</span></div><hr>';
+  h+='<div class="row"><span class="small">Новых выучено</span><span class="big">'+ses.stats.newN+'</span></div><hr>';
+  h+='<div class="row"><span class="small">Серия в игре</span><span class="big">'+ses.gBest+'</span></div><hr>';
+  h+='<div class="row"><span class="small">Серия занятий</span><span class="big">'+S.streak+' дн.</span></div><hr>';
+  h+='<div class="small">Завтра: повторение — '+dueT+' шт.'+(freshLeft>0?', новые примеры — до 3 шт.':'')+(freshLeft>0?' (осталось выучить: '+freshLeft+')':' (весь курс пройден — держим форму!)')+'</div>';
+  h+='</div><button class="btn" data-act="done">Готово</button>';
+  app.innerHTML=h;
+}
+// --- прогресс и помощь ---
+function progressScreen(){
+  let h='<h2>Мой прогресс</h2>';
+  const c=counts();
+  h+='<div class="card"><div class="row"><span class="small">Выучено</span><span class="progress-num">'+c.learned+' / '+TOTAL+'</span></div>';
+  h+='<div class="row" style="margin-top:8px"><span class="small">Надёжно в памяти</span><span class="progress-num">'+c.mastered+'</span></div><hr>';
+  h+='<div class="row"><span class="small">Серия занятий</span><span class="big">'+S.streak+' дн. (рекорд: '+S.best+')</span></div><hr>';
+  const acc=S.total>0?Math.round(100*S.correct/S.total):0;
+  h+='<div class="row"><span class="small">Точность ответов</span><span class="big">'+acc+'%</span></div></div>';
+  STAGES.forEach(function(st,si){
+    h+='<div class="stage"><div class="t">Ступень '+(si+1)+' — столбец ×'+st.table+'</div><div class="chips">';
+    st.items.forEach(function(it){
+      const f=S.facts[it.key],box=f?f.box:0;
+      const stars=box>0?'★'.repeat(box)+'☆'.repeat(5-box):'☆☆☆☆☆';
+      h+='<div class="chip'+(box>=5?' done':'')+'">'+it.a+'×'+it.b+'='+it.ans+'<span class="st">'+stars+'</span></div>';
+    });
+    h+='</div></div>';
+  });
+  h+='<div class="small center">★ — повторение пройдено. 5 звёзд = факт закреплён в долгой памяти.</div>';
+  h+='<button class="btn secondary" data-act="back">На главную</button>';
+  h+='<button class="btn tiny" data-act="reset">Начать всё заново</button><div id="confirm"></div>';
+  app.innerHTML=h;
+}
+function helpScreen(){
+  app.innerHTML='<h2>Как это работает</h2>'
+  +'<div class="card"><b>Методика</b><ul>'
+  +'<li><b>36 вместо 100.</b> 7×6 и 6×7 — один пример. Курс построен так, что вы никогда не учите одно и то же дважды.</li>'
+  +'<li><b>Ступени от простого к сложному.</b> Сначала ×2 и ×5 (они считаются сами), потом ×9, ×3, ×4 — и к трудным столбцам почти всё уже выучено «заодно».</li>'
+  +'<li><b>По 3 новых примера в день.</b> Больше — нельзя: уставшая память не держит.</li>'
+  +'<li><b>Умные повторения.</b> Каждый факт возвращается через 1, 2, 4, 8 и 16 дней. Забыли — вернётся раньше, помните — позже. Пять успешных повторений = надёжно.</li>'
+  +'<li><b>Страховка.</b> У каждого примера есть способ посчитать за пару секунд, если из памяти «выпал». Считать медленно — не стыдно, это часть обучения.</li>'
+  +'</ul></div>'
+  +'<div class="card"><b>Советы</b><ul>'
+  +'<li>Занимайтесь каждый день понемногу — это важнее долгих редких марафонов.</li>'
+  +'<li>Говорите ответ вслух — так память держит крепче.</li>'
+  +'<li>Пропустили день — не беда, программа сама перенесёт повторения.</li>'
+  +'<li>Не подглядывайте в ответ раньше, чем подумали хотя бы 3 секунды.</li>'
+  +'</ul></div>'
+  +'<div class="card"><b>Фокус с девяткой на пальцах</b><div style="margin-top:8px">Загните палец с номером N, умножая 9×N. Слева от загнутого — число десятков, справа — единиц. Проверьте: 9×3 — загните 3-й палец, слева 2, справа 7 → 27.</div></div>'
+  +'<button class="btn secondary" data-act="back">На главную</button>';
+}
+function resetConfirm(){
+  document.getElementById('confirm').innerHTML='<div class="warn center">Точно начать заново? Весь прогресс будет удалён.<br><button class="btn tiny" data-act="reset-yes">Да, удалить</button> <button class="btn tiny" data-act="back">Отмена</button></div>';
+}
+// ============ ГЛАВНЫЙ ОБРАБОТЧИК ============
+app.addEventListener('click',function(e){
+  const el=e.target.closest('[data-act]');
+  if(!el)return;
+  const act=el.dataset.act;
+  if(act==='start'){if(!S.intro){S.intro=true;save();}startSession();return;}
+  if(act==='progress'){progressScreen();return;}
+  if(act==='help'){helpScreen();return;}
+  if(act==='back'||act==='done'){home();return;}
+  if(act==='reset'){resetConfirm();return;}
+  if(act==='reset-yes'){S=defStore();save();home();return;}
+  if(act==='install'){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt=null;}return;}
+  if(!ses)return;
+  if(act==='ans'){onAnswer(+el.dataset.v);return;}
+  if(act==='rv-next'){nextReview();return;}
+  if(act==='rv-retry'){retryReview();return;}
+  if(act==='pr-retry'){retryPractice();return;}
+  if(act==='practice'){ses.practice=0;ses.cur={it:ses.fresh[ses.freshIdx]};askPractice();return;}
+  if(act==='skipquiz'){startSkipQuiz();return;}
+  if(act==='next'){nextLearn();return;}
+  if(act==='quiz-done'){advance();return;}
+  if(act==='quiz-next'){quizNext();return;}
+  if(act==='g-next'){nextGame();return;}
+});
+load();
+home();
+if('serviceWorker'in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){
+  try{navigator.serviceWorker.register('./sw.js');}catch(e){}
+}
+</script>
+</body>
+</html>
